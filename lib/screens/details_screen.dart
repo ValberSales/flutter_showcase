@@ -56,47 +56,73 @@ class _DetailsScreenState extends State<DetailsScreen> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text('Detalhes do Jogo'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            tooltip: 'Editar',
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => FormScreen(jogoId: _jogo.id),
-                ),
-              );
-              setState(() {
-                _carregarJogo(); // Recarrega os dados atualizados após edição
-              });
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete),
-            tooltip: 'Apagar',
-            onPressed: _apagarJogo,
-          ),
-        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Nome', style: Theme.of(context).textTheme.labelLarge),
-            Text(_jogo.nome, style: Theme.of(context).textTheme.headlineMedium),
-            const Divider(height: 32),
-            _buildDetailRow('Editora:', _jogo.editora),
-            _buildDetailRow('Ano de Lançamento:', _jogo.ano.toString()),
-            _buildDetailRow('Mínimo de Jogadores:', _jogo.minJogadores.toString()),
-            _buildDetailRow('Máximo de Jogadores:', _jogo.maxJogadores.toString()),
-          ],
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          // Card para limitar sua largura máxima
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 450), // Largura ideal para leitura
+            child: Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Nome', style: Theme.of(context).textTheme.labelLarge),
+                    Text(_jogo.nome, style: Theme.of(context).textTheme.headlineMedium),
+                    const Divider(height: 32),
+                    
+                    _buildDetailRow('Editora:', _jogo.editora),
+                    _buildDetailRow('Ano de Lançamento:', _jogo.ano.toString()),
+                    _buildDetailRow('Mín. Jogadores:', _jogo.minJogadores.toString()),
+                    _buildDetailRow('Máx. Jogadores:', _jogo.maxJogadores.toString()),
+                    
+                    const SizedBox(height: 32),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.edit),
+                          label: const Text('Editar'),
+                          onPressed: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => FormScreen(jogoId: _jogo.id),
+                              ),
+                            );
+                            setState(() {
+                              _carregarJogo();
+                            });
+                          },
+                        ),
+                        const SizedBox(width: 16),
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.delete, color: Colors.white),
+                          label: const Text('Apagar', style: TextStyle(color: Colors.white)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red.shade600,
+                          ),
+                          onPressed: _apagarJogo,
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
-
+  
   Widget _buildDetailRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -104,7 +130,13 @@ class _DetailsScreenState extends State<DetailsScreen> {
         children: [
           Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(width: 8),
-          Text(value, style: const TextStyle(fontSize: 16)),
+          Expanded( // Impede que textos muito grandes quebrem o layout
+            child: Text(
+              value, 
+              style: const TextStyle(fontSize: 16),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
     );

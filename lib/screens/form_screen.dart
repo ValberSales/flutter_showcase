@@ -76,64 +76,81 @@ class _FormScreenState extends State<FormScreen> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(isEdicao ? 'Editar Jogo' : 'Novo Jogo'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextFormField(
-                controller: _nomeCtrl,
-                decoration: const InputDecoration(labelText: 'Nome do Jogo', border: OutlineInputBorder()),
-                validator: (value) => value!.isEmpty ? 'Campo obrigatório' : null,
+      // Center e SingleChildScrollView trabalham juntos para centralizar e permitir rolagem
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          // ConstrainedBox limita a largura do formulário para 450 pixels
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 450),
+            child: Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _editoraCtrl,
-                decoration: const InputDecoration(labelText: 'Editora', border: OutlineInputBorder()),
-                validator: (value) => value!.isEmpty ? 'Campo obrigatório' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _anoCtrl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Ano de Lançamento', border: OutlineInputBorder()),
-                validator: (value) => value!.isEmpty ? 'Campo obrigatório' : null,
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _minJogadoresCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Mín. Jogadores', border: OutlineInputBorder()),
-                      validator: (value) => value!.isEmpty ? '*' : null,
-                    ),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0), // Respiro interno do form
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min, // Faz a coluna abraçar o conteúdo sem esticar até o fim da tela
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextFormField(
+                        controller: _nomeCtrl,
+                        decoration: const InputDecoration(labelText: 'Nome do Jogo', border: OutlineInputBorder()),
+                        validator: (value) => value!.isEmpty ? 'Campo obrigatório' : null,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _editoraCtrl,
+                        decoration: const InputDecoration(labelText: 'Editora', border: OutlineInputBorder()),
+                        validator: (value) => value!.isEmpty ? 'Campo obrigatório' : null,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _anoCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(labelText: 'Ano de Lançamento', border: OutlineInputBorder()),
+                        validator: (value) => value!.isEmpty ? 'Campo obrigatório' : null,
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _minJogadoresCtrl,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(labelText: 'Mín. Jogadores', border: OutlineInputBorder()),
+                              validator: (value) => value!.isEmpty ? '*' : null,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _maxJogadoresCtrl,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(labelText: 'Máx. Jogadores', border: OutlineInputBorder()),
+                              validator: (value) => value!.isEmpty ? '*' : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 32),
+                      ElevatedButton(
+                        onPressed: _salvar,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.all(16),
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                        child: Text(isEdicao ? 'Salvar Alterações' : 'Cadastrar Jogo', style: const TextStyle(fontSize: 16)),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _maxJogadoresCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Máx. Jogadores', border: OutlineInputBorder()),
-                      validator: (value) => value!.isEmpty ? '*' : null,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: _salvar,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(16),
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 ),
-                child: Text(isEdicao ? 'Salvar Alterações' : 'Cadastrar Jogo', style: const TextStyle(fontSize: 16)),
               ),
-            ],
+            ),
           ),
         ),
       ),
