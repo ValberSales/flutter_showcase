@@ -244,3 +244,539 @@ O aprendizado do **Dart** pode ser um desafio inicial por ser uma linguagem nova
 
 ### 🐧 Impacto no Mundo Linux
 A recepção no Linux foi positiva principalmente pelo fator econômico e técnico. O Flutter remove a barreira do custo de desenvolver uma versão específica para cada distro ou plataforma. Como o código-base é único, empresas e desenvolvedores independentes passaram a entregar softwares de alta qualidade para Linux que antes ficavam restritos ao Windows ou macOS, aumentando a oferta de aplicativos nativos de alto desempenho no ecossistema.
+
+# 🚀 Tutorial: Construindo um CRUD Completo em Flutter
+
+Neste tutorial, vamos construir um aplicativo de gerenciamento de **Jogos de Tabuleiro**. O aplicativo permite Listar, Visualizar, Criar, Editar e Apagar itens (operações clássicas de um CRUD).
+
+Antes de colocar a mão no código, vamos entender alguns conceitos essenciais do Flutter que utilizaremos neste projeto.
+
+---
+
+## 🧠 Conceitos Fundamentais
+
+### 1. Por que separar em vários arquivos?
+Colocar todo o código no arquivo `main.dart` funciona para testes rápidos, mas é uma péssima prática para projetos reais. Nós separamos o código em pastas (Models, Repositories, Screens) por três motivos:
+* **Manutenção:** Fica muito mais fácil achar onde consertar um bug visual (Screens) ou uma regra de negócio (Repositories).
+* **Reutilização:** Você pode usar o mesmo `Model` em várias telas diferentes.
+* **Trabalho em Equipe:** Evita que vários desenvolvedores mexam no mesmo arquivo ao mesmo tempo, gerando conflitos.
+
+### 2. StatelessWidget vs StatefulWidget
+Tudo no Flutter é um **Widget** (um componente visual), mas eles se dividem em dois tipos principais:
+* **StatelessWidget (Sem Estado):** São "burros" e imutáveis. Depois de desenhados na tela, eles não mudam. Exemplo: um ícone ou um texto fixo.
+* **StatefulWidget (Com Estado):** São dinâmicos. Eles conseguem "lembrar" de informações e se redesenhar quando essas informações mudam (usando a função `setState()`). Exemplo: uma lista que ganha novos itens ou um formulário onde o usuário digita textos.
+
+### 3. Navegação (Navigator)
+O Flutter gerencia as telas como se fossem uma pilha de cartas (Stack).
+* `Navigator.push`: Coloca uma nova carta (tela) no topo do baralho. O usuário "avança" no app.
+* `Navigator.pop`: Retira a carta do topo. O usuário "volta" para a tela anterior.
+
+---
+
+## 🛠️ Passo 1: Preparando a Estrutura
+
+No seu projeto Flutter, abra a pasta `lib/` e crie as seguintes pastas e arquivos vazios para que sua estrutura fique exatamente assim:
+
+```text
+lib/
+ ├── models/
+ │    └── jogo.dart
+ ├── repositories/
+ │    └── jogo_repository.dart
+ ├── screens/
+ │    ├── home_screen.dart
+ │    ├── details_screen.dart
+ │    └── form_screen.dart
+ └── main.dart
+```
+
+---
+
+## 📦 Passo 2: O Modelo de Dados (Model)
+
+O Model é a planta-baixa do nosso objeto. Ele define quais atributos um Jogo de Tabuleiro possui, sem se preocupar com telas ou banco de dados.
+
+Abra o arquivo **`lib/models/jogo.dart`** e cole o código abaixo:
+
+```dart
+class Jogo {
+  String id;
+  String nome;
+  String editora;
+  int ano;
+  int minJogadores;
+  int maxJogadores;
+
+  Jogo({
+    required this.id,
+    required this.nome,
+    required this.editora,
+    required this.ano,
+    required this.minJogadores,
+    required this.maxJogadores,
+  });
+}
+```
+
+---
+
+## 🗄️ Passo 3: O Repositório (Banco de Dados)
+
+O repositório é a camada que gerencia como os dados são salvos e buscados. Aqui, usaremos uma lista estática em memória para simular um banco de dados de verdade (como SQLite ou Firebase).
+
+Abra o arquivo **`lib/repositories/jogo_repository.dart`** e cole o código abaixo:
+
+```dart
+import '../models/jogo.dart';
+
+class JogoRepository {
+  // Lista estática que simula nosso banco de dados. 
+  // O 'static' permite acessar a lista de qualquer lugar do app.
+  static List<Jogo> jogos = [];
+}
+```
+
+---
+
+## 🏠 Passo 4: A Tela Principal (Listagem)
+
+Esta é a tela inicial. Ela usa um `StatefulWidget` porque precisa se atualizar (`_refresh()`) sempre que adicionarmos ou excluirmos um jogo.
+
+**Widgets importantes usados aqui:**
+* `ListView.separated`: Cria uma lista rolável que adiciona automaticamente uma linha divisória (`Divider`) entre os itens.
+* `ListTile`: Um widget perfeito para listas, com espaços já definidos para ícone (`leading`), título (`title`) e ação (`trailing`).
+
+Abra o arquivo **`lib/screens/home_screen.dart`** e cole o código:
+
+```dart
+import 'package:flutter/material.dart';
+import '../repositories/jogo_repository.dart';
+import 'details_screen.dart';
+import 'form_screen.dart';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  // Atualiza a tela reconstruindo os widgets
+  void _refresh() {
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final jogos = JogoRepository.jogos;
+
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text('Meus Jogos de Tabuleiro'),
+      ),
+      body: jogos.isEmpty
+          ? const Center(child: Text('Nenhum jogo cadastrado. Adicione um!'))
+          : ListView.separated(
+              padding: const EdgeInsets.all(8),
+              itemCount: jogos.length,
+              separatorBuilder: (_, __) => const Divider(),
+              itemBuilder: (context, index) {
+                final jogo = jogos[index];
+                return ListTile(
+                  leading: const CircleAvatar(
+                    child: Icon(Icons.casino),
+                  ),
+                  title: Text(
+                    jogo.nome,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text('${jogo.editora} • ${jogo.ano}'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () async {
+                    // Navega para os detalhes. O 'await' faz a tela atual esperar
+                    // a próxima tela ser fechada para então chamar o _refresh().
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DetailsScreen(jogoId: jogo.id),
+                      ),
+                    );
+                    _refresh(); 
+                  },
+                );
+              },
+            ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const FormScreen()),
+          );
+          _refresh();
+        },
+        tooltip: 'Adicionar Jogo',
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+```
+
+---
+
+## 🔍 Passo 5: Tela de Detalhes (Visualização e Exclusão)
+
+A tela de detalhes serve para mostrar as informações completas de um item selecionado. Além disso, ela abriga os botões para editar ou apagar o jogo.
+
+### 📐 Entendendo o Layout
+Nesta tela, utilizamos alguns "widgets invisíveis" e organizadores de layout para deixar a interface bonita:
+* **`Padding`**: É um widget invisível que cria uma "margem interna". Ele afasta os elementos das bordas da tela, dando um respiro ao design (no nosso caso, 16 pixels de todos os lados).
+* **`Column`**: Organiza os filhos verticalmente (um embaixo do outro). Usamos o `crossAxisAlignment: CrossAxisAlignment.start` para que todos os textos fiquem alinhados à esquerda, em vez de centralizados.
+* **`Divider`**: Uma linha fina horizontal para separar o título principal das características numéricas do jogo.
+
+Abra o arquivo **`lib/screens/details_screen.dart`** e cole o código:
+
+```dart
+import 'package:flutter/material.dart';
+import '../models/jogo.dart';
+import '../repositories/jogo_repository.dart';
+import 'form_screen.dart';
+
+class DetailsScreen extends StatefulWidget {
+  final String jogoId;
+
+  const DetailsScreen({super.key, required this.jogoId});
+
+  @override
+  State<DetailsScreen> createState() => _DetailsScreenState();
+}
+
+class _DetailsScreenState extends State<DetailsScreen> {
+  late Jogo _jogo;
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarJogo();
+  }
+
+  // Busca o jogo na nossa lista estática usando o ID recebido
+  void _carregarJogo() {
+    _jogo = JogoRepository.jogos.firstWhere((j) => j.id == widget.jogoId);
+  }
+
+  // Mostra um Pop-up (Dialog) de confirmação antes de excluir
+  void _apagarJogo() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Apagar Jogo?'),
+        content: Text('Tem certeza que deseja apagar "${_jogo.nome}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context), // Apenas fecha o popup
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              JogoRepository.jogos.removeWhere((j) => j.id == _jogo.id);
+              Navigator.pop(context); // Fecha o Dialog
+              Navigator.pop(context); // Volta para a HomeScreen
+            },
+            child: const Text('Apagar', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text('Detalhes do Jogo'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            tooltip: 'Editar',
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => FormScreen(jogoId: _jogo.id),
+                ),
+              );
+              // Quando voltar da tela de edição, recarrega os dados
+              setState(() {
+                _carregarJogo(); 
+              });
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete),
+            tooltip: 'Apagar',
+            onPressed: _apagarJogo,
+          ),
+        ],
+      ),
+      // O Padding garante que o texto não cole nas bordas do celular
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start, // Alinha tudo à esquerda
+          children: [
+            Text('Nome', style: Theme.of(context).textTheme.labelLarge),
+            Text(_jogo.nome, style: Theme.of(context).textTheme.headlineMedium),
+            const Divider(height: 32), // Linha separadora
+            
+            _buildDetailRow('Editora:', _jogo.editora),
+            _buildDetailRow('Ano de Lançamento:', _jogo.ano.toString()),
+            _buildDetailRow('Mínimo de Jogadores:', _jogo.minJogadores.toString()),
+            _buildDetailRow('Máximo de Jogadores:', _jogo.maxJogadores.toString()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Widget customizado para evitar repetição de código
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const SizedBox(width: 8), // Espaço vazio na horizontal
+          Text(value, style: const TextStyle(fontSize: 16)),
+        ],
+      ),
+    );
+  }
+}
+```
+
+---
+
+## 📝 Passo 6: A Tela de Formulário (Criar e Editar)
+
+Esta é a tela mais complexa desse tutorial. Ela serve tanto para criar um jogo novo quanto para editar um existente.
+
+### 🧠 Conceitos Importantes Desta Tela
+
+#### 1. Os "Espiões": `TextEditingController`
+No Flutter, um campo de texto (`TextFormField`) não armazena seu próprio valor de forma fácil de ler. Para resgatar o que o usuário digitou, conectamos um `TextEditingController` a ele.
+* Ele funciona como um "fio": você pode puxar o valor dele (`_nomeCtrl.text`) quando for salvar no banco, ou pode injetar um valor nele (`_nomeCtrl.text = 'Monopoly'`) quando quiser que o campo já comece preenchido (no caso de uma edição).
+* **Regra de Ouro:** Sempre que criar um controller, você precisa destruí-lo no método `dispose()` para não causar vazamento de memória.
+
+#### 2. Agrupando o Layout (Form, Column, Row e Expanded)
+* **`Form` e `GlobalKey`:** Envolvemos todos os campos em um widget `Form`. A chave (`_formKey`) permite que, com um único comando, o Flutter rode a validação de todos os campos de uma vez. Se um campo estiver vazio, ele fica vermelho automaticamente.
+* **`SizedBox`:** Um dos widgets mais usados no Flutter. É uma caixa invisível. Usamos `SizedBox(height: 16)` para criar um espaçamento vertical exato entre um campo de texto e outro.
+* **`Row` e `Expanded`:** Nos campos de "Máximo e Mínimo de Jogadores", queremos que fiquem lado a lado. Usamos a `Row` para criar a linha. Porém, como os campos de texto tentam ocupar tamanho infinito na horizontal, colocamos cada um dentro de um `Expanded`. Isso diz ao Flutter: *"Dividam o espaço que sobrou na tela irmamente pela metade"*.
+
+#### 3. Evitando Quebra de Tela com `SingleChildScrollView`
+Quando você clica em um campo de texto no celular, o teclado sobe. Se o seu layout for apenas uma `Column`, o teclado cobrirá os botões e o Flutter mostrará um erro de "Pixel Overflow" (uma faixa amarela e preta). Envolver tudo em um `SingleChildScrollView` torna a tela rolável, permitindo que o usuário desça a página mesmo com o teclado aberto.
+
+Abra o arquivo **`lib/screens/form_screen.dart`** e cole o código:
+
+```dart
+import 'package:flutter/material.dart';
+import '../models/jogo.dart';
+import '../repositories/jogo_repository.dart';
+
+class FormScreen extends StatefulWidget {
+  final String? jogoId; // Se for nulo, estamos criando. Se tiver ID, estamos editando.
+
+  const FormScreen({super.key, this.jogoId});
+
+  @override
+  State<FormScreen> createState() => _FormScreenState();
+}
+
+class _FormScreenState extends State<FormScreen> {
+  // A chave mestra para validar todo o formulário de uma vez
+  final _formKey = GlobalKey<FormState>();
+
+  // Controladores: Os "espiões" que leem o que é digitado
+  final _nomeCtrl = TextEditingController();
+  final _editoraCtrl = TextEditingController();
+  final _anoCtrl = TextEditingController();
+  final _minJogadoresCtrl = TextEditingController();
+  final _maxJogadoresCtrl = TextEditingController();
+
+  // Uma função simples para facilitar a leitura do código
+  bool get isEdicao => widget.jogoId != null;
+
+  @override
+  void initState() {
+    super.initState();
+    // Se for edição, busca o jogo e pré-preenche os controladores
+    if (isEdicao) {
+      final jogo = JogoRepository.jogos.firstWhere((j) => j.id == widget.jogoId);
+      _nomeCtrl.text = jogo.nome;
+      _editoraCtrl.text = jogo.editora;
+      _anoCtrl.text = jogo.ano.toString();
+      _minJogadoresCtrl.text = jogo.minJogadores.toString();
+      _maxJogadoresCtrl.text = jogo.maxJogadores.toString();
+    }
+  }
+
+  @override
+  void dispose() {
+    // Obrigatório: Limpar a memória quando a tela for fechada
+    _nomeCtrl.dispose();
+    _editoraCtrl.dispose();
+    _anoCtrl.dispose();
+    _minJogadoresCtrl.dispose();
+    _maxJogadoresCtrl.dispose();
+    super.dispose();
+  }
+
+  void _salvar() {
+    // Aciona o validator de todos os TextFormFields.
+    // Só entra no 'if' se todos retornarem 'null' (sem erro).
+    if (_formKey.currentState!.validate()) {
+      if (isEdicao) {
+        // Atualiza o jogo existente na lista
+        final jogo = JogoRepository.jogos.firstWhere((j) => j.id == widget.jogoId);
+        jogo.nome = _nomeCtrl.text;
+        jogo.editora = _editoraCtrl.text;
+        jogo.ano = int.parse(_anoCtrl.text);
+        jogo.minJogadores = int.parse(_minJogadoresCtrl.text);
+        jogo.maxJogadores = int.parse(_maxJogadoresCtrl.text);
+      } else {
+        // Cria um novo objeto Jogo
+        final novoJogo = Jogo(
+          id: DateTime.now().millisecondsSinceEpoch.toString(), // Gera ID baseado na hora atual
+          nome: _nomeCtrl.text,
+          editora: _editoraCtrl.text,
+          ano: int.parse(_anoCtrl.text),
+          minJogadores: int.parse(_minJogadoresCtrl.text),
+          maxJogadores: int.parse(_maxJogadoresCtrl.text),
+        );
+        JogoRepository.jogos.add(novoJogo); // Salva no repositório
+      }
+      Navigator.pop(context); // Fecha o formulário
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: Text(isEdicao ? 'Editar Jogo' : 'Novo Jogo'),
+      ),
+      // Permite que a tela role quando o teclado virtual abrir
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0), // Respiro nas bordas
+        child: Form(
+          key: _formKey, // Conecta a chave ao formulário
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch, // Estica os botões de ponta a ponta
+            children: [
+              TextFormField(
+                controller: _nomeCtrl, // Conecta o espião
+                decoration: const InputDecoration(labelText: 'Nome do Jogo', border: OutlineInputBorder()),
+                // Validação simples: não permite campo vazio
+                validator: (value) => value!.isEmpty ? 'Campo obrigatório' : null,
+              ),
+              const SizedBox(height: 16), // Caixa invisível para dar espaçamento vertical
+              
+              TextFormField(
+                controller: _editoraCtrl,
+                decoration: const InputDecoration(labelText: 'Editora', border: OutlineInputBorder()),
+                validator: (value) => value!.isEmpty ? 'Campo obrigatório' : null,
+              ),
+              const SizedBox(height: 16),
+              
+              TextFormField(
+                controller: _anoCtrl,
+                keyboardType: TextInputType.number, // Abre o teclado numérico
+                decoration: const InputDecoration(labelText: 'Ano de Lançamento', border: OutlineInputBorder()),
+                validator: (value) => value!.isEmpty ? 'Campo obrigatório' : null,
+              ),
+              const SizedBox(height: 16),
+              
+              // Coloca os dois últimos campos lado a lado
+              Row(
+                children: [
+                  Expanded( // Diz para o campo ocupar metade do espaço da Row
+                    child: TextFormField(
+                      controller: _minJogadoresCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Mín. Jogadores', border: OutlineInputBorder()),
+                      validator: (value) => value!.isEmpty ? '*' : null,
+                    ),
+                  ),
+                  const SizedBox(width: 16), // Espaçamento horizontal entre os campos
+                  Expanded(
+                    child: TextFormField(
+                      controller: _maxJogadoresCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Máx. Jogadores', border: OutlineInputBorder()),
+                      validator: (value) => value!.isEmpty ? '*' : null,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+              
+              ElevatedButton(
+                onPressed: _salvar,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.all(16),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                ),
+                child: Text(isEdicao ? 'Salvar Alterações' : 'Cadastrar Jogo', style: const TextStyle(fontSize: 16)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+```
+---
+
+## 🚪 Passo 7: O Ponto de Entrada (Main)
+
+Finalmente, com todas as telas e lógicas criadas, vamos limpar a sujeira do arquivo principal gerado pelo Flutter. O `main.dart` passa a ser apenas o responsável por configurar o tema de cores e apontar qual é a primeira tela do app.
+
+Abra o arquivo **`lib/main.dart`** e substitua tudo por:
+
+```dart
+import 'package:flutter/material.dart';
+import 'screens/home_screen.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'CRUD Jogos de Tabuleiro',
+      debugShowCheckedModeBanner: false, // Remove a faixa de Debug no canto superior direito
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
+        useMaterial3: true,
+      ),
+      home: const HomeScreen(), // Define a tela principal
+    );
+  }
+}
+```
+
+---
+
+### 🎉 Parabéns!
+Você acabou de estruturar uma aplicação Flutter seguindo boas práticas de separação de código. Para rodar, basta executar `flutter run` no seu terminal ou apertar o botão de Play na sua IDE.
