@@ -343,8 +343,9 @@ class JogoRepository {
 Esta é a tela inicial. Ela usa um `StatefulWidget` porque precisa se atualizar (`_refresh()`) sempre que adicionarmos ou excluirmos um jogo.
 
 **Widgets importantes usados aqui:**
-* `ListView.separated`: Cria uma lista rolável que adiciona automaticamente uma linha divisória (`Divider`) entre os itens.
-* `ListTile`: Um widget perfeito para listas, com espaços já definidos para ícone (`leading`), título (`title`) e ação (`trailing`).
+* **`ListView.separated`**: Cria uma lista rolável que adiciona automaticamente uma linha divisória (`Divider`) entre os itens.
+* **`Card`**: Cria a base do card que vai ser usado como tabela de jogos.
+* **`ListTile`**: Um widget perfeito para listas, com espaços já definidos para ícone (`leading`), título (`title`) e ação (`trailing`).
 
 Abra o arquivo **`lib/screens/home_screen.dart`** e cole o código:
 
@@ -362,7 +363,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Atualiza a tela reconstruindo os widgets
+
   void _refresh() {
     setState(() {});
   }
@@ -375,39 +376,71 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text('Meus Jogos de Tabuleiro'),
+        actions: [
+          // Botão de informação que abre os detalhes da licença
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            tooltip: 'Sobre o App',
+            onPressed: () {
+              showAboutDialog(
+                context: context,
+                applicationName: 'CRUD Jogos',
+                applicationVersion: '1.0.0',
+                applicationIcon: const FlutterLogo(size: 40),
+                applicationLegalese: '© 2026 Valber Sales Junior\nDistribuído sob a licença BSD 3-Clause.',
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(top: 16.0),
+                    child: Text(
+                      'Este é um projeto de código aberto desenvolvido como exemplo prático '
+                          'de um CRUD utilizando boas práticas de componentização em Flutter.',
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
       body: jogos.isEmpty
           ? const Center(child: Text('Nenhum jogo cadastrado. Adicione um!'))
-          : ListView.separated(
-              padding: const EdgeInsets.all(8),
-              itemCount: jogos.length,
-              separatorBuilder: (_, __) => const Divider(),
-              itemBuilder: (context, index) {
-                final jogo = jogos[index];
-                return ListTile(
-                  leading: const CircleAvatar(
-                    child: Icon(Icons.casino),
+          : ListView.builder( // 1. Mudamos de 'separated' para 'builder'
+        padding: const EdgeInsets.all(8),
+        itemCount: jogos.length,
+        itemBuilder: (context, index) {
+          final jogo = jogos[index];
+
+          // 2. Envolvemos o ListTile com um Card
+          return Card(
+            elevation: 4, // Controla o tamanho da sombra do card
+            margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4), // Espaçamento externo
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12), // Deixa as bordas arredondadas
+            ),
+            child: ListTile(
+              leading: const CircleAvatar(
+                child: Icon(Icons.casino_rounded),
+              ),
+              title: Text(
+                jogo.nome,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text('${jogo.editora} • ${jogo.ano}'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () async {
+                // Vai para a tela de detalhes e aguarda o retorno
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DetailsScreen(jogoId: jogo.id),
                   ),
-                  title: Text(
-                    jogo.nome,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text('${jogo.editora} • ${jogo.ano}'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () async {
-                    // Navega para os detalhes. O 'await' faz a tela atual esperar
-                    // a próxima tela ser fechada para então chamar o _refresh().
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => DetailsScreen(jogoId: jogo.id),
-                      ),
-                    );
-                    _refresh(); 
-                  },
                 );
+                _refresh(); // Atualiza a lista ao voltar
               },
             ),
+          );
+        },
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           await Navigator.push(
@@ -433,6 +466,7 @@ A tela de detalhes serve para mostrar as informações completas de um item sele
 ### 📐 Entendendo o Layout
 Nesta tela, utilizamos alguns "widgets invisíveis" e organizadores de layout para deixar a interface bonita:
 * **`Padding`**: É um widget invisível que cria uma "margem interna". Ele afasta os elementos das bordas da tela, dando um respiro ao design (no nosso caso, 16 pixels de todos os lados).
+* **`Card`**: Cria a base do card que vai ser populado com os detalhes do jogo.
 * **`Column`**: Organiza os filhos verticalmente (um embaixo do outro). Usamos o `crossAxisAlignment: CrossAxisAlignment.start` para que todos os textos fiquem alinhados à esquerda, em vez de centralizados.
 * **`Divider`**: Uma linha fina horizontal para separar o título principal das características numéricas do jogo.
 
@@ -462,12 +496,10 @@ class _DetailsScreenState extends State<DetailsScreen> {
     _carregarJogo();
   }
 
-  // Busca o jogo na nossa lista estática usando o ID recebido
   void _carregarJogo() {
     _jogo = JogoRepository.jogos.firstWhere((j) => j.id == widget.jogoId);
   }
 
-  // Mostra um Pop-up (Dialog) de confirmação antes de excluir
   void _apagarJogo() {
     showDialog(
       context: context,
@@ -476,15 +508,15 @@ class _DetailsScreenState extends State<DetailsScreen> {
         content: Text('Tem certeza que deseja apagar "${_jogo.nome}"?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context), // Apenas fecha o popup
+            onPressed: () => Navigator.pop(context),
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
               JogoRepository.jogos.removeWhere((j) => j.id == _jogo.id);
-              Navigator.pop(context); // Fecha o Dialog
-              Navigator.pop(context); // Volta para a HomeScreen
+              Navigator.pop(context); // Fecha o dialog
+              Navigator.pop(context); // Volta para a tela inicial
             },
             child: const Text('Apagar', style: TextStyle(color: Colors.white)),
           ),
@@ -499,64 +531,112 @@ class _DetailsScreenState extends State<DetailsScreen> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text('Detalhes do Jogo'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            tooltip: 'Editar',
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => FormScreen(jogoId: _jogo.id),
-                ),
-              );
-              // Quando voltar da tela de edição, recarrega os dados
-              setState(() {
-                _carregarJogo(); 
-              });
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete),
-            tooltip: 'Apagar',
-            onPressed: _apagarJogo,
-          ),
-        ],
       ),
-      // O Padding garante que o texto não cole nas bordas do celular
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start, // Alinha tudo à esquerda
-          children: [
-            Text('Nome', style: Theme.of(context).textTheme.labelLarge),
-            Text(_jogo.nome, style: Theme.of(context).textTheme.headlineMedium),
-            const Divider(height: 32), // Linha separadora
-            
-            _buildDetailRow('Editora:', _jogo.editora),
-            _buildDetailRow('Ano de Lançamento:', _jogo.ano.toString()),
-            _buildDetailRow('Mínimo de Jogadores:', _jogo.minJogadores.toString()),
-            _buildDetailRow('Máximo de Jogadores:', _jogo.maxJogadores.toString()),
-          ],
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          // Card para limitar sua largura máxima
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: 450,
+            ), // Largura ideal para leitura
+            child: Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Nome', style: Theme.of(context).textTheme.labelLarge),
+                    Text(
+                      _jogo.nome,
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
+                    const Divider(height: 32),
+
+                    _buildDetailRow('Editora:', _jogo.editora),
+                    _buildDetailRow('Ano de Lançamento:', _jogo.ano.toString()),
+                    _buildDetailRow(
+                      'Mín. Jogadores:',
+                      _jogo.minJogadores.toString(),
+                    ),
+                    _buildDetailRow(
+                      'Máx. Jogadores:',
+                      _jogo.maxJogadores.toString(),
+                    ),
+
+                    const SizedBox(height: 32),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.edit),
+                          label: const Text('Editar'),
+                          onPressed: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    FormScreen(jogoId: _jogo.id),
+                              ),
+                            );
+                            setState(() {
+                              _carregarJogo();
+                            });
+                          },
+                        ),
+                        const SizedBox(width: 16),
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.delete, color: Colors.white),
+                          label: const Text(
+                            'Apagar',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red.shade600,
+                          ),
+                          onPressed: _apagarJogo,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
 
-  // Widget customizado para evitar repetição de código
   Widget _buildDetailRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(width: 8), // Espaço vazio na horizontal
-          Text(value, style: const TextStyle(fontSize: 16)),
+          Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            // Impede que textos muito grandes quebrem o layout
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 16),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
     );
   }
 }
+
 ```
 
 ---
@@ -574,6 +654,7 @@ No Flutter, um campo de texto (`TextFormField`) não armazena seu próprio valor
 
 #### 2. Agrupando o Layout (Form, Column, Row e Expanded)
 * **`Form` e `GlobalKey`:** Envolvemos todos os campos em um widget `Form`. A chave (`_formKey`) permite que, com um único comando, o Flutter rode a validação de todos os campos de uma vez. Se um campo estiver vazio, ele fica vermelho automaticamente.
+* **`Card`**: Cria a base do card que vai ser populado com os campos de formulário.
 * **`SizedBox`:** Um dos widgets mais usados no Flutter. É uma caixa invisível. Usamos `SizedBox(height: 16)` para criar um espaçamento vertical exato entre um campo de texto e outro.
 * **`Row` e `Expanded`:** Nos campos de "Máximo e Mínimo de Jogadores", queremos que fiquem lado a lado. Usamos a `Row` para criar a linha. Porém, como os campos de texto tentam ocupar tamanho infinito na horizontal, colocamos cada um dentro de um `Expanded`. Isso diz ao Flutter: *"Dividam o espaço que sobrou na tela irmamente pela metade"*.
 
@@ -588,7 +669,7 @@ import '../models/jogo.dart';
 import '../repositories/jogo_repository.dart';
 
 class FormScreen extends StatefulWidget {
-  final String? jogoId; // Se for nulo, estamos criando. Se tiver ID, estamos editando.
+  final String? jogoId;
 
   const FormScreen({super.key, this.jogoId});
 
@@ -597,23 +678,26 @@ class FormScreen extends StatefulWidget {
 }
 
 class _FormScreenState extends State<FormScreen> {
-  // A chave mestra para validar todo o formulário de uma vez
+
+  // ============================================================================
+  // 🧠 BLOCO DE LÓGICA E ESTADO DA TELA
+  // Aqui são definidas variáveis, controladores, validações e o ciclo de vida.
+  // É o "cérebro" da tela, onde os dados são processados antes de serem exibidos.
+  // ============================================================================
+
   final _formKey = GlobalKey<FormState>();
 
-  // Controladores: Os "espiões" que leem o que é digitado
   final _nomeCtrl = TextEditingController();
   final _editoraCtrl = TextEditingController();
   final _anoCtrl = TextEditingController();
   final _minJogadoresCtrl = TextEditingController();
   final _maxJogadoresCtrl = TextEditingController();
 
-  // Uma função simples para facilitar a leitura do código
   bool get isEdicao => widget.jogoId != null;
 
   @override
   void initState() {
     super.initState();
-    // Se for edição, busca o jogo e pré-preenche os controladores
     if (isEdicao) {
       final jogo = JogoRepository.jogos.firstWhere((j) => j.id == widget.jogoId);
       _nomeCtrl.text = jogo.nome;
@@ -626,7 +710,6 @@ class _FormScreenState extends State<FormScreen> {
 
   @override
   void dispose() {
-    // Obrigatório: Limpar a memória quando a tela for fechada
     _nomeCtrl.dispose();
     _editoraCtrl.dispose();
     _anoCtrl.dispose();
@@ -636,11 +719,8 @@ class _FormScreenState extends State<FormScreen> {
   }
 
   void _salvar() {
-    // Aciona o validator de todos os TextFormFields.
-    // Só entra no 'if' se todos retornarem 'null' (sem erro).
     if (_formKey.currentState!.validate()) {
       if (isEdicao) {
-        // Atualiza o jogo existente na lista
         final jogo = JogoRepository.jogos.firstWhere((j) => j.id == widget.jogoId);
         jogo.nome = _nomeCtrl.text;
         jogo.editora = _editoraCtrl.text;
@@ -648,97 +728,166 @@ class _FormScreenState extends State<FormScreen> {
         jogo.minJogadores = int.parse(_minJogadoresCtrl.text);
         jogo.maxJogadores = int.parse(_maxJogadoresCtrl.text);
       } else {
-        // Cria um novo objeto Jogo
         final novoJogo = Jogo(
-          id: DateTime.now().millisecondsSinceEpoch.toString(), // Gera ID baseado na hora atual
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
           nome: _nomeCtrl.text,
           editora: _editoraCtrl.text,
           ano: int.parse(_anoCtrl.text),
           minJogadores: int.parse(_minJogadoresCtrl.text),
           maxJogadores: int.parse(_maxJogadoresCtrl.text),
         );
-        JogoRepository.jogos.add(novoJogo); // Salva no repositório
+        JogoRepository.jogos.add(novoJogo);
       }
-      Navigator.pop(context); // Fecha o formulário
+      Navigator.pop(context);
     }
   }
 
+
+  // ============================================================================
+  // 🎨 BLOCO DE CONSTRUÇÃO DA INTERFACE (UI)
+  // O método "build" é onde o Flutter começa a desenhar a tela de fato.
+  // Tudo que retorna daqui é o que o usuário vai enxergar.
+  // ============================================================================
+
   @override
   Widget build(BuildContext context) {
+
+    // INÍCIO: SCAFFOLD (O esqueleto principal da tela)
     return Scaffold(
+
+      // INÍCIO: APP BAR (A barra superior)
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(isEdicao ? 'Editar Jogo' : 'Novo Jogo'),
       ),
-      // Permite que a tela role quando o teclado virtual abrir
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0), // Respiro nas bordas
-        child: Form(
-          key: _formKey, // Conecta a chave ao formulário
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch, // Estica os botões de ponta a ponta
-            children: [
-              TextFormField(
-                controller: _nomeCtrl, // Conecta o espião
-                decoration: const InputDecoration(labelText: 'Nome do Jogo', border: OutlineInputBorder()),
-                // Validação simples: não permite campo vazio
-                validator: (value) => value!.isEmpty ? 'Campo obrigatório' : null,
+      // FIM: APP BAR
+
+      // INÍCIO: CENTER (Centraliza tudo no meio da tela)
+      body: Center(
+
+        // INÍCIO: SINGLE CHILD SCROLL VIEW (Permite rolar a tela se o teclado abrir)
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+
+          // INÍCIO: CONSTRAINED BOX (Trava a largura máxima)
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 450),
+
+            // INÍCIO: CARD (A caixa branca com sombra)
+            child: Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
-              const SizedBox(height: 16), // Caixa invisível para dar espaçamento vertical
-              
-              TextFormField(
-                controller: _editoraCtrl,
-                decoration: const InputDecoration(labelText: 'Editora', border: OutlineInputBorder()),
-                validator: (value) => value!.isEmpty ? 'Campo obrigatório' : null,
-              ),
-              const SizedBox(height: 16),
-              
-              TextFormField(
-                controller: _anoCtrl,
-                keyboardType: TextInputType.number, // Abre o teclado numérico
-                decoration: const InputDecoration(labelText: 'Ano de Lançamento', border: OutlineInputBorder()),
-                validator: (value) => value!.isEmpty ? 'Campo obrigatório' : null,
-              ),
-              const SizedBox(height: 16),
-              
-              // Coloca os dois últimos campos lado a lado
-              Row(
-                children: [
-                  Expanded( // Diz para o campo ocupar metade do espaço da Row
-                    child: TextFormField(
-                      controller: _minJogadoresCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Mín. Jogadores', border: OutlineInputBorder()),
-                      validator: (value) => value!.isEmpty ? '*' : null,
-                    ),
+
+              // INÍCIO: PADDING (Espaço interno do Card)
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+
+                // INÍCIO: FORM (O formulário que agrupa os campos)
+                child: Form(
+                  key: _formKey,
+
+                  // INÍCIO: COLUMN (Empilha os campos de cima para baixo)
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+
+                      // INÍCIO: CAMPO 1 (Nome)
+                      TextFormField(
+                        controller: _nomeCtrl,
+                        decoration: const InputDecoration(labelText: 'Nome do Jogo', border: OutlineInputBorder()),
+                        validator: (value) => value!.isEmpty ? 'Campo obrigatório' : null,
+                      ),
+                      // FIM: CAMPO 1
+
+                      const SizedBox(height: 16),
+
+                      // INÍCIO: CAMPO 2 (Editora)
+                      TextFormField(
+                        controller: _editoraCtrl,
+                        decoration: const InputDecoration(labelText: 'Editora', border: OutlineInputBorder()),
+                        validator: (value) => value!.isEmpty ? 'Campo obrigatório' : null,
+                      ),
+                      // FIM: CAMPO 2
+
+                      const SizedBox(height: 16),
+
+                      // INÍCIO: CAMPO 3 (Ano)
+                      TextFormField(
+                        controller: _anoCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(labelText: 'Ano de Lançamento', border: OutlineInputBorder()),
+                        validator: (value) => value!.isEmpty ? 'Campo obrigatório' : null,
+                      ),
+                      // FIM: CAMPO 3
+
+                      const SizedBox(height: 16),
+
+                      // INÍCIO: ROW (Coloca os campos de jogadores lado a lado)
+                      Row(
+                        children: [
+
+                          // INÍCIO: METADE ESQUERDA (Mín. Jogadores)
+                          Expanded(
+                            child: TextFormField(
+                              controller: _minJogadoresCtrl,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(labelText: 'Mín. Jogadores', border: OutlineInputBorder()),
+                              validator: (value) => value!.isEmpty ? '*' : null,
+                            ),
+                          ),
+                          // FIM: METADE ESQUERDA
+
+                          const SizedBox(width: 16),
+
+                          // INÍCIO: METADE DIREITA (Máx. Jogadores)
+                          Expanded(
+                            child: TextFormField(
+                              controller: _maxJogadoresCtrl,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(labelText: 'Máx. Jogadores', border: OutlineInputBorder()),
+                              validator: (value) => value!.isEmpty ? '*' : null,
+                            ),
+                          ),
+                          // FIM: METADE DIREITA
+
+                        ],
+                      ),
+                      // FIM: ROW
+
+                      const SizedBox(height: 32),
+
+                      // INÍCIO: BOTÃO SALVAR
+                      ElevatedButton(
+                        onPressed: _salvar,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.all(16),
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                        child: Text(isEdicao ? 'Salvar Alterações' : 'Cadastrar Jogo', style: const TextStyle(fontSize: 16)),
+                      ),
+                      // FIM: BOTÃO SALVAR
+
+                    ],
                   ),
-                  const SizedBox(width: 16), // Espaçamento horizontal entre os campos
-                  Expanded(
-                    child: TextFormField(
-                      controller: _maxJogadoresCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Máx. Jogadores', border: OutlineInputBorder()),
-                      validator: (value) => value!.isEmpty ? '*' : null,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
-              
-              ElevatedButton(
-                onPressed: _salvar,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(16),
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  // FIM: COLUMN
                 ),
-                child: Text(isEdicao ? 'Salvar Alterações' : 'Cadastrar Jogo', style: const TextStyle(fontSize: 16)),
+                // FIM: FORM
               ),
-            ],
+              // FIM: PADDING
+            ),
+            // FIM: CARD
           ),
+          // FIM: CONSTRAINED BOX
         ),
+        // FIM: SINGLE CHILD SCROLL VIEW
       ),
+      // FIM: CENTER
     );
+    // FIM: SCAFFOLD
   }
 }
 ```
@@ -765,12 +914,32 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'CRUD Jogos de Tabuleiro',
-      debugShowCheckedModeBanner: false, // Remove a faixa de Debug no canto superior direito
+      debugShowCheckedModeBanner: false,
+
+      // 1. TEMA CLARO (Padrão)
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+          brightness: Brightness.light, // Força o esquema claro
+        ),
         useMaterial3: true,
       ),
-      home: const HomeScreen(), // Define a tela principal
+
+      // 2. TEMA ESCURO
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue, // Mantém a mesma cor base (opcional)
+          brightness: Brightness.dark,  // Força o esquema escuro
+        ),
+        useMaterial3: true,
+      ),
+
+      // 3. COMPORTAMENTO DO TEMA
+      // ThemeMode.system diz para o app obedecer à configuração do celular/computador.
+      // Você também poderia forçar ThemeMode.light ou ThemeMode.dark.
+      themeMode: ThemeMode.system,
+
+      home: const HomeScreen(),
     );
   }
 }

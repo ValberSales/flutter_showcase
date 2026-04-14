@@ -62,7 +62,9 @@ class _DetailsScreenState extends State<DetailsScreen> {
           padding: const EdgeInsets.all(16.0),
           // Card para limitar sua largura máxima
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 450), // Largura ideal para leitura
+            constraints: const BoxConstraints(
+              maxWidth: 450,
+            ), // Largura ideal para leitura
             child: Card(
               elevation: 4,
               shape: RoundedRectangleBorder(
@@ -75,14 +77,23 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Nome', style: Theme.of(context).textTheme.labelLarge),
-                    Text(_jogo.nome, style: Theme.of(context).textTheme.headlineMedium),
+                    Text(
+                      _jogo.nome,
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
                     const Divider(height: 32),
-                    
+
                     _buildDetailRow('Editora:', _jogo.editora),
                     _buildDetailRow('Ano de Lançamento:', _jogo.ano.toString()),
-                    _buildDetailRow('Mín. Jogadores:', _jogo.minJogadores.toString()),
-                    _buildDetailRow('Máx. Jogadores:', _jogo.maxJogadores.toString()),
-                    
+                    _buildDetailRow(
+                      'Mín. Jogadores:',
+                      _jogo.minJogadores.toString(),
+                    ),
+                    _buildDetailRow(
+                      'Máx. Jogadores:',
+                      _jogo.maxJogadores.toString(),
+                    ),
+
                     const SizedBox(height: 32),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -94,7 +105,8 @@ class _DetailsScreenState extends State<DetailsScreen> {
                             await Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => FormScreen(jogoId: _jogo.id),
+                                builder: (context) =>
+                                    FormScreen(jogoId: _jogo.id),
                               ),
                             );
                             setState(() {
@@ -105,14 +117,17 @@ class _DetailsScreenState extends State<DetailsScreen> {
                         const SizedBox(width: 16),
                         ElevatedButton.icon(
                           icon: const Icon(Icons.delete, color: Colors.white),
-                          label: const Text('Apagar', style: TextStyle(color: Colors.white)),
+                          label: const Text(
+                            'Apagar',
+                            style: TextStyle(color: Colors.white),
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.red.shade600,
                           ),
                           onPressed: _apagarJogo,
                         ),
                       ],
-                    )
+                    ),
                   ],
                 ),
               ),
@@ -122,17 +137,21 @@ class _DetailsScreenState extends State<DetailsScreen> {
       ),
     );
   }
-  
+
   Widget _buildDetailRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
           const SizedBox(width: 8),
-          Expanded( // Impede que textos muito grandes quebrem o layout
+          Expanded(
+            // Impede que textos muito grandes quebrem o layout
             child: Text(
-              value, 
+              value,
               style: const TextStyle(fontSize: 16),
               overflow: TextOverflow.ellipsis,
             ),
